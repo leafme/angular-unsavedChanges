@@ -229,7 +229,7 @@ angular.module('unsavedChanges', ['lazyModel', 'ngMaterial', 'ui.router'])
                             },
                             // discard pressed
                             function(){
-                                nextParams = {} || nextParams;
+                                nextParams = nextParams || {};
                                 unsavedWarningsConfig.log("user doesn't care about loosing stuff");
                                 removeFn();
                                 $state.go(next.name, nextParams);

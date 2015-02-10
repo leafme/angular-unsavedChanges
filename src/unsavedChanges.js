@@ -2,10 +2,10 @@
 /*jshint globalstrict: true*/
 /*jshint undef:false */
 
-// @todo NOTE We should investigate changing default to 
+// @todo NOTE We should investigate changing default to
 // $routeChangeStart see https://github.com/angular-ui/ui-router/blob/3898270241d4e32c53e63554034d106363205e0e/src/compat.js#L126
 
-angular.module('unsavedChanges', ['lazyModel'])
+angular.module('unsavedChanges', ['lazyModel', 'ngMaterial', 'ui.router'])
 
 .provider('unsavedWarningsConfig', function() {
 
@@ -14,7 +14,7 @@ angular.module('unsavedChanges', ['lazyModel'])
     // defaults
     var logEnabled = false;
     var useTranslateService = true;
-    var routeEvent = ['$locationChangeStart', '$stateChangeStart'];
+    var routeEvent = ['$stateChangeStart'];
     var navigateMessage = 'You will lose unsaved changes if you leave this page';
     var reloadMessage = 'You will lose unsaved changes if you reload this page';
 
@@ -124,8 +124,8 @@ angular.module('unsavedChanges', ['lazyModel'])
     ];
 })
 
-.service('unsavedWarningSharedService', ['$rootScope', 'unsavedWarningsConfig', '$injector',
-    function($rootScope, unsavedWarningsConfig, $injector) {
+.service('unsavedWarningSharedService', ['$rootScope', 'unsavedWarningsConfig', '$injector', '$mdDialog', '$state',
+    function($rootScope, unsavedWarningsConfig, $injector, $mdDialog, $state) {
 
         // Controller scopped variables
         var _this = this;
@@ -144,7 +144,7 @@ angular.module('unsavedChanges', ['lazyModel'])
             reload: unsavedWarningsConfig.reloadMessage
         };
 
-        // Check all registered forms 
+        // Check all registered forms
         // if any one is dirty function will return true
 
         function allFormsClean() {
@@ -170,7 +170,7 @@ angular.module('unsavedChanges', ['lazyModel'])
             var idx = allForms.indexOf(form);
 
             // this form is not present array
-            // @todo needs test coverage 
+            // @todo needs test coverage
             if (idx === -1) return;
 
             allForms.splice(idx, 1);
@@ -189,7 +189,7 @@ angular.module('unsavedChanges', ['lazyModel'])
 
         // Function called when user tries to close the window
         this.confirmExit = function() {
-            // @todo this could be written a lot cleaner! 
+            // @todo this could be written a lot cleaner!
             if (!allFormsClean()) return messages.reload;
             tearDown();
         };
@@ -206,23 +206,42 @@ angular.module('unsavedChanges', ['lazyModel'])
 
             angular.forEach(eventsToWatchFor, function(aEvent) {
                 // calling this function later will unbind this, acting as $off()
-                var removeFn = $rootScope.$on(aEvent, function(event, next, current) {
+                var removeFn = $rootScope.$on(aEvent, function(event, next, nextParams) {
                     unsavedWarningsConfig.log("user is moving with " + aEvent);
-                    // @todo this could be written a lot cleaner! 
+
+                    // @todo this could be written a lot cleaner!
                     if (!allFormsClean()) {
                         unsavedWarningsConfig.log("a form is dirty");
-                        if (!confirm(messages.navigate)) {
-                            unsavedWarningsConfig.log("user wants to cancel leaving");
-                            event.preventDefault(); // user clicks cancel, wants to stay on page 
-                        } else {
-                            unsavedWarningsConfig.log("user doesn't care about loosing stuff");
-                        }
+
+                        var confirm = $mdDialog.confirm({
+                                title: 'Save Changes?',
+                                content: messages.navigate,
+                                ok: 'Return',
+                                cancel: 'Discard'
+                              });
+
+                        event.preventDefault();
+
+                        $mdDialog.show(confirm).then(
+                            // save pressed
+                            function(){
+                                unsavedWarningsConfig.log("user wants to cancel leaving");
+                            },
+                            // discard pressed
+                            function(){
+                                nextParams = nextParams || {};
+                                unsavedWarningsConfig.log("user doesn't care about loosing stuff");
+                                removeFn();
+                                $state.go(next.name, nextParams);
+                            }
+                        );
+
                     } else {
-                        unsavedWarningsConfig.log("all forms are clean");
+                      unsavedWarningsConfig.log("all forms are clean");
                     }
+                    removeFunctions.push(removeFn);
 
                 });
-                removeFunctions.push(removeFn);
             });
         }
     }
@@ -261,7 +280,7 @@ angular.module('unsavedChanges', ['lazyModel'])
                     }
                 });
 
-                // @todo check destroy on clear button too? 
+                // @todo check destroy on clear button too?
                 scope.$on('$destroy', function() {
                     unsavedWarningSharedService.removeForm(formCtrl);
                 });
@@ -298,9 +317,9 @@ angular.module('lazyModel', [])
                 elem.removeAttr("lazy-model");
                 return {
                     pre: function(scope, elem) {
-                        // initialize buffer value as copy of original model 
+                        // initialize buffer value as copy of original model
                         scope.buffer = ngModelGet(scope.$parent);
-                        // compile element with ng-model directive pointing to buffer value   
+                        // compile element with ng-model directive pointing to buffer value
                         $compile(elem)(scope);
                     },
                     post: function postLink(scope, elem, attr, formCtrl) {

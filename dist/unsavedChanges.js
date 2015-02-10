@@ -15,8 +15,8 @@ angular.module('unsavedChanges', ['lazyModel', 'ngMaterial', 'ui.router'])
     var logEnabled = false;
     var useTranslateService = true;
     var routeEvent = ['$stateChangeStart'];
-    var navigateMessage = 'You will lose unsaved changes if you leave this page';
-    var reloadMessage = 'You will lose unsaved changes if you reload this page';
+    var navigateMessage = 'Would you like to discard your changes?';
+    var reloadMessage = 'You will lose unsaved changes if you reload this page.';
 
     Object.defineProperty(_this, 'navigateMessage', {
         get: function() {
@@ -214,25 +214,25 @@ angular.module('unsavedChanges', ['lazyModel', 'ngMaterial', 'ui.router'])
                         unsavedWarningsConfig.log("a form is dirty");
 
                         var confirm = $mdDialog.confirm({
-                                title: 'Save Changes?',
+                                title: 'Discard Changes?',
                                 content: messages.navigate,
-                                ok: 'Return',
-                                cancel: 'Discard'
+                                ok: 'Discard',
+                                cancel: 'Cancel'
                               });
 
                         event.preventDefault();
 
                         $mdDialog.show(confirm).then(
-                            // save pressed
-                            function(){
-                                unsavedWarningsConfig.log("user wants to cancel leaving");
-                            },
                             // discard pressed
                             function(){
                                 nextParams = nextParams || {};
-                                unsavedWarningsConfig.log("user doesn't care about loosing stuff");
+                                unsavedWarningsConfig.log("user doesn't care about losing stuff");
                                 removeFn();
                                 $state.go(next.name, nextParams);
+                            },
+                            // cancel pressed
+                            function(){
+                                unsavedWarningsConfig.log("user wants to cancel leaving");
                             }
                         );
 

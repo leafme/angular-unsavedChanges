@@ -16,7 +16,7 @@ angular.module('unsavedChanges', ['lazyModel', 'ngMaterial', 'ui.router'])
     var useTranslateService = true;
     var routeEvent = ['$stateChangeStart'];
     var navigateMessage = 'Would you like to discard your changes?';
-    var reloadMessage = 'You will lose unsaved changes if you reload this page.';
+    var reloadMessage = 'You will lose unsaved changes if you continue.';
 
     Object.defineProperty(_this, 'navigateMessage', {
         get: function() {
